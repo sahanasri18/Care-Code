@@ -1,0 +1,58 @@
+# CareCode deployment on Render (Blueprints)
+# Creates: a PostgreSQL database + a web service running FastAPI that serves
+# the built React SPA from /opt/render/project/src/frontend/dist.
+
+services:
+  - type: web
+    name: carecode-api
+    runtime: python
+    plan: free
+    buildCommand: |-
+      cd frontend && npm ci && npm run build && cd .. && pip install -r backend/requirements.txt
+    startCommand: |-
+      cd backend && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: carecode-db
+          property: connectionString
+      - key: FRONTEND_URL
+        sync: false # set to https://carecode-api.onrender.com
+      - key: PUBLIC_BASE_URL
+        sync: false # set to https://carecode-api.onrender.com (same as FRONTEND_URL)
+      - key: STORAGE_DIR
+        value: /opt/render/project/src/storage
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+      - key: RESET_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+      # Email (SMTP) — required for the Forgot Password flow:
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_NAME
+        value: CareCode
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_USE_TLS
+        value: "true"
+
+databases:
+  - name: carecode-db
+    plan: free
+    databaseName: carecode
+    user: carecode
