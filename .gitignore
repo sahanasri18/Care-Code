@@ -10,10 +10,10 @@ htmlcov/
 
 # Environment & secrets
 .env
-.env.local
-*.env
+.env.*
 !.env.example
 !.env.test
+*.env
 
 # Databases & storage (local dev)
 *.db
