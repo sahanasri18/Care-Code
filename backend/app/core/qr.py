@@ -12,7 +12,12 @@ QR_BORDER = 2
 
 
 def public_emergency_url(settings: Settings, carecode: str) -> str:
-    base = settings.public_url or f"http://localhost:8000"
+    base = settings.public_url
+    if not base:
+        raise RuntimeError(
+            "PUBLIC_BASE_URL must be set in production — "
+            "QR codes and password-reset emails require a public URL."
+        )
     return f"{base}/e/{carecode}"
 
 

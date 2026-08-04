@@ -1,14 +1,21 @@
-# CareCode deployment on Render (Blueprints)
-# Creates: a PostgreSQL database + a web service running FastAPI that serves
-# the built React SPA from /opt/render/project/src/frontend/dist.
+# CareCode — Render Blueprint
+# Creates: PostgreSQL database + web service (FastAPI serving React SPA).
+#
+# Post-deploy steps (set in Render dashboard → Environment tab):
+#   1. FRONTEND_URL      = https://<your-service>.onrender.com
+#   2. PUBLIC_BASE_URL   = https://<your-service>.onrender.com
+#   3. SMTP_*            = your email provider settings (for forgot-password)
+#   4. Create admin:      Render Shell → cd backend && python -m app.cli create-admin admin@carecode.io "Admin" "Admin1!Pass"
 
 services:
   - type: web
     name: carecode-api
     runtime: python
+    pythonVersion: "3.12"
     plan: free
     buildCommand: |-
-      cd frontend && npm ci && npm run build && cd .. && pip install -r backend/requirements.txt
+      cd frontend && npm ci && npm run build && cd .. &&
+      pip install -r backend/requirements.txt
     startCommand: |-
       cd backend && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
@@ -21,10 +28,11 @@ services:
         fromDatabase:
           name: carecode-db
           property: connectionString
+      # REQUIRED after first deploy — set to your service's external URL
       - key: FRONTEND_URL
-        sync: false # set to https://carecode-api.onrender.com
+        sync: false
       - key: PUBLIC_BASE_URL
-        sync: false # set to https://carecode-api.onrender.com (same as FRONTEND_URL)
+        sync: false
       - key: STORAGE_DIR
         value: /opt/render/project/src/storage
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
@@ -35,19 +43,19 @@ services:
         value: "30"
       - key: RATE_LIMIT_ENABLED
         value: "true"
-      # Email (SMTP) — required for the Forgot Password flow:
+      # SMTP — leave empty to use console backend (dev); configure for production forgot-password.
       - key: SMTP_HOST
-        sync: false
+        value: ""
       - key: SMTP_PORT
         value: "587"
       - key: SMTP_USER
-        sync: false
+        value: ""
       - key: SMTP_PASSWORD
-        sync: false
+        value: ""
       - key: SMTP_FROM_NAME
         value: CareCode
       - key: SMTP_FROM_EMAIL
-        sync: false
+        value: noreply@carecode.example
       - key: SMTP_USE_TLS
         value: "true"
 
